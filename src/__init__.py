@@ -38,3 +38,32 @@ class Klash:
             return wrapper()
 
         return decorator
+
+    async def load(self, client):
+        """Load commands. (recommended to use in ready event.)
+
+        Args:
+            client (krema.models.Client): Client.
+        """
+
+        urls = []
+
+        for command in self.commands:
+            url = f"/applications/{client.user.id}"
+
+            if command.get("scope") == "global":
+                url += "/commands"
+            else:
+                url += f"/guilds/{command.get('scope')}/commands"
+
+            urls.append({"url": url, "data": {
+                "name": command["name"],
+                "description": command["description"],
+                "options": command["options"]
+            }})
+
+        result = await asyncio.gather(*[
+            client.http.request("POST", i.get("url"), json=i.get("data")) for i in urls
+        ])
+
+        self._ids = result
