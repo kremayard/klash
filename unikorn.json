@@ -1,0 +1,13 @@
+{
+    "name": "klash",
+    "description": "Slash command framework for Krema.",
+    "tags": [
+        "krema",
+        "slash-commands",
+        "discord",
+        "command"
+    ],
+    "pipreq": [],
+    "unireq": [],
+    "github": []
+}
