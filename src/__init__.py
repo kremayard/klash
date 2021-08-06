@@ -10,8 +10,7 @@ class Klash:
     """Base class for Klash."""
 
     def __init__(self) -> None:
-        self.commands: list = []
-        self._ids: list = []
+        self.__commands: list = []
 
     def add(self, guild_id: Optional[int], name: Optional[str], description: str, options: list):
         """Add new global slash command decorator.
@@ -25,7 +24,7 @@ class Klash:
 
         def decorator(fn: Callable):
             def wrapper():
-                self.commands.append({
+                self.__commands.append({
                     "scope": "global" if guild_id is None else guild_id,
                     "name": name or fn.__name__,
                     "description": description,
@@ -33,7 +32,7 @@ class Klash:
                     "execute": fn
                 })
 
-                return self.commands
+                return self.__commands
 
             return wrapper()
 
@@ -46,9 +45,10 @@ class Klash:
             client (krema.models.Client): Client.
         """
 
+        # Load commands
         urls = []
 
-        for command in self.commands:
+        for command in self.__commands:
             url = f"/applications/{client.user.id}"
 
             if command.get("scope") == "global":
@@ -62,8 +62,24 @@ class Klash:
                 "options": command["options"]
             }})
 
-        result = await asyncio.gather(*[
+        await asyncio.gather(*[
             client.http.request("POST", i.get("url"), json=i.get("data")) for i in urls
         ])
 
-        self._ids = result
+    def prepare(self, client):
+        """Prepare commands.
+
+        Args:
+            client (krema.models.Client): Client.
+        """
+
+        # Add Interaction Create event.
+        async def wrapper(i):
+            for command in self.__commands:
+                if command.get("name") == i.data.get("name"):
+                    await command.get("execute")(i)
+                    return
+
+        client.events.append(
+            ("interaction_create", wrapper)
+        )
